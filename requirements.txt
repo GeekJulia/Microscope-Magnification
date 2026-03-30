@@ -23,7 +23,7 @@ Werkzeug>=2.2.3,<4.0.0       # Flask's WSGI toolkit (pinned to match Flask 2.x/3
 Jinja2>=3.0.3,<4.0.0         # templating engine used by Flask
 click>=8.0.4,<9.0.0          # Flask CLI
 itsdangerous>=2.0.0,<3.0.0   # session signing used by Flask
-
+gunicorn
 # ── Data handling (optional — used for CSV analysis) ───────────
 pandas>=1.5.3,<3.0.0         # 1.5.x is the oldest release fully supporting
                               # Python 3.10; upper-bound <3.0 keeps the API stable
