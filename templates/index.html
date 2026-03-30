@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Microscope Size Calculator</title>
+
+  <!-- Google Fonts: Orbitron (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ═══════════════════════════════════════════════
+       DESIGN TOKENS
+    ═══════════════════════════════════════════════ */
+    :root {
+      --bg:        #080c14;
+      --surface:   #0e1525;
+      --surface2:  #131d30;
+      --border:    #1e2f4a;
+      --accent:    #00e5ff;
+      --accent2:   #0070ff;
+      --glow:      #00e5ff33;
+      --success:   #00ffb3;
+      --error:     #ff4d6d;
+      --text:      #cdd6f4;
+      --subtext:   #6272a4;
+      --font-mono: 'Orbitron', monospace;
+      --font-body: 'DM Sans', sans-serif;
+      --radius:    10px;
+      --transition: 0.22s ease;
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── animated grid background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── top gradient bar ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent), var(--accent2));
+      background-size: 200% 100%;
+      animation: slide 3s linear infinite;
+      z-index: 999;
+    }
+    @keyframes slide { 0%{background-position:0 0} 100%{background-position:200% 0} }
+
+    /* ═══════════════════════════════════════════════
+       LAYOUT
+    ═══════════════════════════════════════════════ */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════════════ */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: fadeDown .6s ease both;
+    }
+    .header__icon {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 16px var(--accent));
+      animation: pulse 3s ease infinite;
+    }
+    @keyframes pulse {
+      0%,100%{ filter: drop-shadow(0 0 16px var(--accent)); }
+      50%    { filter: drop-shadow(0 0 32px var(--accent)); }
+    }
+    .header__title {
+      font-family: var(--font-mono);
+      font-size: clamp(1.4rem, 4vw, 2.2rem);
+      font-weight: 900;
+      letter-spacing: .08em;
+      background: linear-gradient(135deg, var(--accent) 0%, #fff 60%, var(--accent2) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header__sub {
+      font-family: var(--font-mono);
+      font-size: .78rem;
+      color: var(--subtext);
+      letter-spacing: .15em;
+      margin-top: 8px;
+    }
+    .header__formula {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 20px;
+      font-family: var(--font-mono);
+      font-size: .82rem;
+      color: var(--accent);
+      margin-top: 14px;
+      letter-spacing: .1em;
+    }
+
+    /* ═══════════════════════════════════════════════
+       CARD
+    ═══════════════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 36px;
+      margin-bottom: 28px;
+      animation: fadeUp .5s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+    .card--result { animation-delay: .1s; }
+    .card--history { animation-delay: .2s; }
+
+    @keyframes fadeUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeDown{ from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+
+    .card__label {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .18em;
+      color: var(--subtext);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card__label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ═══════════════════════════════════════════════
+       FORM GRID
+    ═══════════════════════════════════════════════ */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group--full { grid-column: 1 / -1; }
+
+    label {
+      font-size: .75rem;
+      color: var(--subtext);
+      letter-spacing: .1em;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    input, select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: .95rem;
+      padding: 11px 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    input::placeholder { color: var(--subtext); opacity: .5; }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+
+    /* custom select arrow */
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      pointer-events: none;
+      font-size: .85rem;
+    }
+    select { padding-right: 36px; cursor: pointer; }
+    select option { background: var(--surface2); }
+
+    /* ── inline unit row ── */
+    .input-unit-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .input-unit-row .select-wrap { width: 108px; }
+
+    /* ── unit pills (live converter) ── */
+    .unit-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .unit-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 4px 14px;
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      color: var(--subtext);
+      cursor: pointer;
+      transition: all var(--transition);
+      letter-spacing: .08em;
+    }
+    .unit-pill:hover, .unit-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg);
+    }
+
+    /* ═══════════════════════════════════════════════
+       BUTTON
+    ═══════════════════════════════════════════════ */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: var(--bg);
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      cursor: pointer;
+      margin-top: 22px;
+      transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .btn:hover { box-shadow: 0 0 24px var(--glow); transform: translateY(-1px); }
+    .btn:active::after { opacity: .1; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .btn .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--bg);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    .btn.loading .spinner { display: block; }
+    .btn.loading .btn-text { opacity: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ═══════════════════════════════════════════════
+       RESULT DISPLAY
+    ═══════════════════════════════════════════════ */
+    .result-panel {
+      display: none;
+      padding: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      box-shadow: 0 0 32px var(--glow);
+      text-align: center;
+      animation: glow-in .4s ease;
+    }
+    .result-panel.visible { display: block; }
+    @keyframes glow-in {
+      from { opacity: 0; transform: scale(.97); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .result-panel__tag {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .2em;
+      color: var(--subtext);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .result-panel__value {
+      font-family: var(--font-mono);
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1.1;
+      word-break: break-all;
+    }
+    .result-panel__unit {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      color: var(--text);
+      margin-left: 6px;
+    }
+    .result-panel__conversions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .conv-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 4px 14px;
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      color: var(--text);
+      letter-spacing: .06em;
+      transition: border-color var(--transition);
+    }
+    .conv-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── toast notifications ── */
+    #toast {
+      position: fixed;
+      bottom: 30px; right: 30px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      font-size: .85rem;
+      max-width: 320px;
+      border-left: 3px solid var(--accent);
+      box-shadow: 0 8px 32px #0008;
+      transform: translateX(120%);
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+      z-index: 9999;
+    }
+    #toast.show { transform: translateX(0); }
+    #toast.error { border-left-color: var(--error); color: var(--error); }
+
+    /* ═══════════════════════════════════════════════
+       HISTORY TABLE
+    ═══════════════════════════════════════════════ */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+    }
+    thead th {
+      background: var(--surface2);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 12px 14px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background var(--transition); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 11px 14px; color: var(--text); white-space: nowrap; }
+    tbody td:nth-child(5) { color: var(--success); font-family: var(--font-mono); font-size: .8rem; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--subtext);
+      font-size: .85rem;
+    }
+    .empty-state span { display: block; font-size: 2rem; margin-bottom: 10px; }
+
+    /* download btn */
+    .btn-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 7px 16px;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all var(--transition);
+      text-decoration: none;
+      font-family: var(--font-body);
+      margin-top: 16px;
+    }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ═══════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════ */
+    @media (max-width: 560px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group--full { grid-column: 1; }
+      .card { padding: 22px 18px; }
+      .input-unit-row { grid-template-columns: 1fr; }
+      .input-unit-row .select-wrap { width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <span class="header__icon">🔬</span>
+    <h1 class="header__title">MICROSCOPE CALCULATOR</h1>
+    <p class="header__sub">BIOLOGY LAB TOOLS &nbsp;·&nbsp; SIZE ANALYSIS</p>
+    <span class="header__formula">Real Size &nbsp;=&nbsp; Image Size &nbsp;÷&nbsp; Magnification</span>
+  </header>
+
+  <!-- ── Input Card ── -->
+  <div class="card">
+    <div class="card__label">🧬 Input Parameters</div>
+
+    <div class="form-grid">
+      <!-- Username -->
+      <div class="form-group form-group--full">
+        <label for="username">Username / Student ID</label>
+        <input type="text" id="username" placeholder="e.g. ada_lovelace" autocomplete="off"/>
+      </div>
+
+      <!-- Image size + unit selector together -->
+      <div class="form-group">
+        <label for="image_size">Image Size (µm)</label>
+        <input type="number" id="image_size" placeholder="e.g. 2000" min="0" step="any"/>
+      </div>
+
+      <!-- Magnification -->
+      <div class="form-group">
+        <label for="magnification">Magnification (×)</label>
+        <input type="number" id="magnification" placeholder="e.g. 400" min="0" step="any"/>
+      </div>
+
+      <!-- Result unit dropdown — full width -->
+      <div class="form-group form-group--full">
+        <label for="unit">Display Result In</label>
+        <div class="input-unit-row">
+          <div class="select-wrap" style="flex:1">
+            <select id="unit">
+              {% for u in units %}
+              <option value="{{ u }}" {% if u == 'µm' %}selected{% endif %}>{{ u }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <!-- Quick-pick pills (mirror the dropdown) -->
+          <div class="unit-pills" id="pillRow">
+            {% for u in units %}
+            <button class="unit-pill {% if u == 'µm' %}active{% endif %}"
+                    data-unit="{{ u }}" type="button">{{ u }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculate button -->
+    <button class="btn" id="calcBtn" type="button">
+      <span class="spinner"></span>
+      <span class="btn-text">⚡&nbsp; CALCULATE &amp; SAVE</span>
+    </button>
+
+    <!-- Result panel (hidden until first calculation) -->
+    <div class="result-panel" id="resultPanel" style="margin-top:24px">
+      <div class="result-panel__tag">Actual Specimen Size</div>
+      <div>
+        <span class="result-panel__value" id="resValue">—</span>
+        <span class="result-panel__unit" id="resUnit"></span>
+      </div>
+      <!-- All-units conversion strip -->
+      <div class="result-panel__conversions" id="convStrip"></div>
+    </div>
+  </div>
+
+  <!-- ── History Card ── -->
+  <div class="card card--history">
+    <div class="card__label" style="justify-content:space-between;display:flex;align-items:center">
+      <span>📋 Saved Measurements</span>
+      <a href="/download" class="btn-sm" title="Download CSV">⬇ CSV</a>
+    </div>
+
+    <div class="table-wrap">
+      <table id="histTable">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Username</th>
+            <th>Image Size (µm)</th>
+            <th>Magnification (×)</th>
+            <th>Actual Size (µm)</th>
+          </tr>
+        </thead>
+        <tbody id="histBody">
+          <tr><td colspan="5"><div class="empty-state"><span>🔭</span>No measurements yet</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════ -->
+<script>
+  /* ── Unit conversion map (mirrors Python server) ── */
+  const FACTORS = { 'µm': 1, 'nm': 1e3, 'mm': 1e-3, 'cm': 1e-4, 'm': 1e-6, 'pm': 1e9 };
+
+  function convertFrom_um(val_um, unit) {
+    return val_um * (FACTORS[unit] ?? 1);
+  }
+
+  /* ── Helpers ── */
+  function formatNum(n) {
+    // Smart formatting: scientific notation for very large/small numbers
+    if (n === 0) return '0';
+    const abs = Math.abs(n);
+    if (abs < 0.0001 || abs >= 1e10) return n.toExponential(4);
+    // Trim trailing zeros, keep up to 6 decimal places
+    return parseFloat(n.toPrecision(7)).toString();
+  }
+
+  function showToast(msg, isError = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = isError ? 'error show' : 'show';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 3400);
+  }
+
+  /* ── Pill ↔ dropdown sync ── */
+  const unitSelect = document.getElementById('unit');
+  const pills      = document.querySelectorAll('.unit-pill');
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      unitSelect.value = pill.dataset.unit;
+      updatePills(pill.dataset.unit);
+      // If we already have a result, re-render in new unit
+      if (lastResult_um !== null) renderResult(lastResult_um, pill.dataset.unit);
+    });
+  });
+
+  unitSelect.addEventListener('change', () => {
+    updatePills(unitSelect.value);
+    if (lastResult_um !== null) renderResult(lastResult_um, unitSelect.value);
+  });
+
+  function updatePills(activeUnit) {
+    pills.forEach(p => p.classList.toggle('active', p.dataset.unit === activeUnit));
+  }
+
+  /* ── Result rendering ── */
+  let lastResult_um = null;
+
+  function renderResult(val_um, unit) {
+    lastResult_um = val_um;
+    const displayed = convertFrom_um(val_um, unit);
+
+    document.getElementById('resValue').textContent = formatNum(displayed);
+    document.getElementById('resUnit').textContent  = unit;
+    document.getElementById('resultPanel').classList.add('visible');
+
+    // Conversion strip — show all units
+    const strip = document.getElementById('convStrip');
+    strip.innerHTML = Object.keys(FACTORS).map(u => {
+      const v = convertFrom_um(val_um, u);
+      return `<span class="conv-chip">${formatNum(v)} ${u}</span>`;
+    }).join('');
+  }
+
+  /* ── Calculate ── */
+  document.getElementById('calcBtn').addEventListener('click', async () => {
+    const btn   = document.getElementById('calcBtn');
+    const body  = {
+      username:      document.getElementById('username').value,
+      image_size:    document.getElementById('image_size').value,
+      magnification: document.getElementById('magnification').value,
+      unit:          unitSelect.value,
+    };
+
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    try {
+      const res  = await fetch('/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showToast(data.errors?.join(' · ') || 'Error occurred.', true);
+      } else {
+        renderResult(data.actual_um, data.unit);
+        showToast('✅ Saved to measurements.csv');
+        loadHistory();   // refresh table
+      }
+    } catch (err) {
+      showToast('Network error — is Flask running?', true);
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  });
+
+  /* ── Load history table ── */
+  async function loadHistory() {
+    const tbody = document.getElementById('histBody');
+    try {
+      const res  = await fetch('/history');
+      const rows = await res.json();
+
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span>🔭</span>No measurements yet</div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.timestamp}</td>
+          <td>${r.username}</td>
+          <td>${r.image_size_um}</td>
+          <td>${r.magnification}</td>
+          <td>${r.actual_size_um}</td>
+        </tr>`).join('');
+    } catch { /* server might not be up yet */ }
+  }
+
+  // Load history on page mount
+  loadHistory();
+
+  /* ── Allow Enter key to trigger calculate ── */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('calcBtn').disabled) {
+      document.getElementById('calcBtn').click();
+    }
+  });
+</script>
+</body>
+</html>

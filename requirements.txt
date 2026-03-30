@@ -1,0 +1,31 @@
+# requirements.txt — Microscope Size Calculator
+# Verified compatible with Python 3.10+
+# Install with:  pip install -r requirements.txt
+#
+# ─────────────────────────────────────────────────────────────────
+# Python 3.10 compatibility notes
+# ─────────────────────────────────────────────────────────────────
+# Flask 2.2+ supports Python >=3.7  (3.x line requires >=3.8)
+# Werkzeug 2.2+ supports Python >=3.7 (3.x line requires >=3.8)
+# Jinja2 3.0+ supports Python >=3.7
+# click 8.0+ supports Python >=3.7
+# itsdangerous 2.0+ supports Python >=3.7
+# pandas 1.5.x supports Python >=3.8 (2.x line requires >=3.9)
+# numpy 1.21+ supports Python >=3.8 (pulled in automatically by pandas)
+# ─────────────────────────────────────────────────────────────────
+
+# ── Web framework ──────────────────────────────────────────────
+Flask>=2.2.5,<4.0.0          # Part D – web GUI; 2.2.5 is the earliest release
+                              # with full Python 3.10 support and security patches
+Werkzeug>=2.2.3,<4.0.0       # Flask's WSGI toolkit (pinned to match Flask 2.x/3.x)
+
+# ── Flask's own dependencies (pinned for reproducibility) ──────
+Jinja2>=3.0.3,<4.0.0         # templating engine used by Flask
+click>=8.0.4,<9.0.0          # Flask CLI
+itsdangerous>=2.0.0,<3.0.0   # session signing used by Flask
+
+# ── Data handling (optional — used for CSV analysis) ───────────
+pandas>=1.5.3,<3.0.0         # 1.5.x is the oldest release fully supporting
+                              # Python 3.10; upper-bound <3.0 keeps the API stable
+
+# tkinter, csv, os, datetime — Python standard library, no install needed.
